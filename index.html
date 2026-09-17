@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>İTÜ Ders Seçimi Pratik Simülatörü & Bookmarklet Benchmark</title>
+  <meta name="description" content="İTÜ ders kayıt sistemi için bookmarklet hız testi ve pratik simülatörü. F5 sonrası tepki sürenizi ölçün.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header Bar -->
+  <header class="itu-navbar">
+    <div class="navbar-container">
+      <div class="brand-group">
+        <div class="itu-crest">
+          <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" class="crest-svg">
+            <circle cx="30" cy="30" r="28" stroke="currentColor" stroke-width="2.5"/>
+            <path d="M30 10L35 22H48L37 30L41 43L30 35L19 43L23 30L12 22H25L30 10Z" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">İSTANBUL TEKNİK ÜNİVERSİTESİ</span>
+          <span class="brand-sub">Öğrenci Bilgi Sistemi (Kepler) &bull; <strong>Ders Seçim Hız Simülatörü</strong></span>
+        </div>
+      </div>
+      <div class="user-meta">
+        <div class="clock-display" id="systemClock">10:00:00.000</div>
+        <div class="user-badge">
+          <div class="avatar">İTÜ</div>
+          <div class="info">
+            <span class="name">Öğrenci Pratik Modu</span>
+            <span class="num">040200000 &bull; Aktif</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Benchmark HUD / Timer Bar -->
+  <section class="benchmark-hud">
+    <div class="hud-container">
+      <!-- Status & Timer Card -->
+      <div class="hud-card main-timer-card" id="mainTimerCard">
+        <div class="hud-badge-row">
+          <span class="badge status-badge live" id="statusBadge"><span class="dot"></span> HAZIR &bull; SAYAÇ ÇALIŞIYOR</span>
+          <span class="badge mode-badge" id="modeBadge">F5 Modu (Sayfa Yüklenmesinden İtibaren)</span>
+        </div>
+        <div class="timer-value-wrapper">
+          <div class="timer-hero-row">
+            <div class="hero-metric-item">
+              <span class="hero-metric-label">Bookmarklet'e Basma Süresi (Refleks)</span>
+              <div class="timer-big" id="timerDisplay">0.000<span class="timer-unit">s</span></div>
+            </div>
+            <div class="hero-metric-item secondary-metric" id="totalExecutionWrapper">
+              <span class="hero-metric-label">Toplam Onay Süresi</span>
+              <div class="timer-secondary" id="totalExecutionDisplay">--<span class="timer-unit">s</span></div>
+            </div>
+          </div>
+          <div class="timer-sub-metrics" id="subMetrics">
+            <span>F5 / Başlangıç: <strong id="startTimeNote">0.000s</strong></span>
+            <span class="sep">&bull;</span>
+            <span>İlk CRN Girişi: <strong id="firstFillTime">--</strong></span>
+            <span class="sep">&bull;</span>
+            <span>Submit Tıklaması: <strong id="submitClickTime">--</strong></span>
+            <span class="sep">&bull;</span>
+            <span>Modal Onay: <strong id="finalConfirmTime">--</strong></span>
+          </div>
+        </div>
+        <div class="hud-action-row">
+          <button class="btn btn-primary btn-reset" id="resetBtn" title="Sayfayı yenilemeden sıfırlar (Kısayol: Space veya R)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
+            </svg>
+            Sıfırla & Tekrar Dene (Space / R)
+          </button>
+          <button class="btn btn-secondary btn-f5" id="realF5Btn" title="Tam tarayıcı yenilemesi yapar (F5)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="4"/>
+              <path d="M9 8h6M9 12h4M9 16h2"/>
+            </svg>
+            Gerçek F5 Testi
+          </button>
+          <button class="btn btn-accent btn-test-simulate" id="simulateBookmarkletBtn" title="Bookmarklet kodunu tek tıkla test eder">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            Kodu Simüle Et (Test)
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Stats Card -->
+      <div class="hud-card stats-card">
+        <h3 class="card-mini-title">REKORLAR VE İSTATİSTİKLER</h3>
+        <div class="stats-grid">
+          <div class="stat-box best">
+            <span class="stat-label">En İyi Süre (Rekor)</span>
+            <span class="stat-num" id="bestTimeDisplay">--</span>
+          </div>
+          <div class="stat-box last">
+            <span class="stat-label">Son Deneme</span>
+            <span class="stat-num" id="lastTimeDisplay">--</span>
+          </div>
+          <div class="stat-box avg">
+            <span class="stat-label">Ortalama Süre</span>
+            <span class="stat-num" id="avgTimeDisplay">--</span>
+          </div>
+          <div class="stat-box count">
+            <span class="stat-label">Toplam Deneme</span>
+            <span class="stat-num" id="attemptCountDisplay">0</span>
+          </div>
+        </div>
+        <div class="stats-actions">
+          <button class="btn-link" id="clearStatsBtn">İstatistikleri Sıfırla</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bookmarklet Quick Setup Banner -->
+  <section class="bookmarklet-helper-bar">
+    <div class="helper-container">
+      <div class="helper-info">
+        <span class="icon-sparkle">🚀</span>
+        <div class="helper-text">
+          <strong>Yer İmi (Bookmarklet) Kurulumu:</strong>
+          <span>Aşağıdaki butonu tarayıcınızın <em>Yer İmleri Çubuğuna</em> sürükleyip bırakın veya kodu kopyalayın:</span>
+        </div>
+      </div>
+      <div class="helper-actions">
+        <!-- Draggable bookmarklet link -->
+        <a class="bookmarklet-drag-btn" id="bookmarkletLink" href="#" title="Bunu yer imleri çubuğunuza sürükleyin!">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          ★ İTÜ Hızlı Ders Seçim
+        </a>
+        <button class="btn btn-sm btn-outline" id="copyCodeBtn">Kodu Kopyala</button>
+        <button class="btn btn-sm btn-outline" id="editValuesBtn">CRN Listesini Düzenle</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main ITU Course Selection Layout -->
+  <main class="itu-main-content">
+    <div class="content-container">
+      
+      <!-- Instructions / Tip Alert -->
+      <div class="info-alert">
+        <div class="alert-icon">💡</div>
+        <div class="alert-content">
+          <strong>Nasıl Pratik Yapılır?</strong>
+          Sayfayı <strong>F5</strong> ile yenileyin (veya <strong>Space / Sıfırla</strong> tuşuna basın). Sayfa açılır açılmaz yer iminizdeki <strong>"İTÜ Hızlı Ders Seçim"</strong> butonuna tıklayın! Kod 10 kutuyu anında dolduracak, kaydet'e ve onay butonuna basacaktır. Süreniz milisaniye cinsinden kaydedilir.
+        </div>
+      </div>
+
+      <!-- Registration Card (Matches ITU SIS Structure) -->
+      <div class="card registration-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div class="header-title-wrap">
+            <h2 class="card-title">Ders Kayıt / CRN Giriş Ekranı</h2>
+            <p class="card-subtitle">2024-2025 Lisans Akademik Takvimi &bull; Ders Ekleme İşlemleri</p>
+          </div>
+          <span class="badge success-badge">Kayıt Sistemi Açık</span>
+        </div>
+
+        <div class="card-body">
+          <!-- Form matching exact submit handler -->
+          <form id="courseSelectionForm" onsubmit="event.preventDefault(); handleFormSubmit();">
+            <div class="table-responsive">
+              <table class="itu-table">
+                <thead>
+                  <tr>
+                    <th style="width: 60px;">#</th>
+                    <th style="width: 200px;">CRN (Ders Kodu)</th>
+                    <th>Ders Adı (Otomatik Algılanır)</th>
+                    <th style="width: 120px;">Kredi</th>
+                    <th style="width: 140px;">Kontenjan</th>
+                    <th style="width: 150px;">Durum</th>
+                  </tr>
+                </thead>
+                <tbody id="crnTableBody">
+                  <!-- 10 input[type="number"] boxes created dynamically and visible -->
+                </tbody>
+              </table>
+            </div>
+
+            <div class="form-actions-bar">
+              <div class="filled-counter" id="filledCounter">Doldurulan CRN: <strong>0 / 10</strong></div>
+              <!-- This matches: button[type="submit"]:not([disabled]) -->
+              <button type="submit" class="btn btn-itu-primary" id="btnSubmitRegistration">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Dersleri Ekle / Gönder
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Results & Attempt History Table -->
+      <div class="card history-card">
+        <div class="card-header">
+          <h3 class="card-title">Deneme Geçmişi</h3>
+          <span class="history-sub">Son yapılan pratikler ve tepki hızları</span>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>Deneme #</th>
+                  <th>Tarih & Saat</th>
+                  <th>Refleks (İlk Basış)</th>
+                  <th>Submit Tıklaması</th>
+                  <th>Toplam Onay Süresi</th>
+                  <th>Derece</th>
+                </tr>
+              </thead>
+              <tbody id="historyTableBody">
+                <tr class="empty-row"><td colspan="6">Henüz pratik denemesi yapılmadı. F5 atıp bookmarklet'e tıklayın!</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ITU OBS Confirmation Modal (Matches .card-footer.d-flex.justify-content-end and buttons[1]) -->
+  <div class="modal-backdrop" id="confirmationModal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h4 class="modal-title">Ders Kayıt Onayı</h4>
+        <button type="button" class="btn-close-modal" id="closeModalCrossBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-alert-icon">⚠️</div>
+        <div class="modal-text">
+          <p><strong>Ders seçim işleminizi onaylıyor musunuz?</strong></p>
+          <p class="modal-desc">Girdiğiniz 10 adet CRN numarası için kayıt talebiniz Kepler / Öğrenci Bilgi Sistemine iletilecektir.</p>
+          <div class="modal-crn-summary" id="modalCrnSummary"></div>
+        </div>
+      </div>
+      <!-- IMPORTANT: The bookmarklet specifically targets:
+           let footer = document.querySelector(".card-footer.d-flex.justify-content-end");
+           if (footer) {
+             let buttons = footer.getElementsByTagName("button");
+             if (buttons.length > 1) buttons[1].click();
+           }
+      -->
+      <div class="card-footer d-flex justify-content-end modal-footer">
+        <button type="button" class="btn btn-secondary modal-cancel-btn" id="modalCancelBtn">Vazgeç</button>
+        <button type="button" class="btn btn-itu-confirm modal-confirm-btn" id="modalConfirmBtn">Onayla ve Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CRN Editor Modal -->
+  <div class="modal-backdrop" id="editorModal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h4 class="modal-title">Bookmarklet CRN Değerlerini Özelleştir</h4>
+        <button type="button" class="btn-close-modal" id="closeEditorCrossBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Bookmarklet'in otomatik dolduracağı 9-10 adet CRN numarasını virgülle ayırarak yazın:</p>
+        <textarea id="customCrnInput" class="crn-textarea" rows="3">11694, 12152, 11695, 11698, 13846, 11700, 11702, 10030, 12155</textarea>
+        <p class="text-muted"><small>Her numara ders seçim kutularına sırasıyla girilecektir.</small></p>
+      </div>
+      <div class="card-footer d-flex justify-content-end modal-footer">
+        <button type="button" class="btn btn-secondary" id="editorCancelBtn">Kapat</button>
+        <button type="button" class="btn btn-primary" id="saveCustomCrnBtn">Kaydet ve Bookmarklet'i Güncelle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Audio elements generated via Web Audio API -->
+  <script src="app.js"></script>
+</body>
+</html>
